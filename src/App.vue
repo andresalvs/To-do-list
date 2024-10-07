@@ -1,117 +1,117 @@
 <template>
   <v-app>
-    <v-toolbar dark color="black">
-      <v-toolbar-title>To-Do List</v-toolbar-title>
-    </v-toolbar>
+    <v-toolbar dark color="indigo">
+  <v-toolbar-title class="title">
+    <v-icon left>mdi-format-list-checks</v-icon> <!-- Icon added -->
+    To-Do List
+  </v-toolbar-title>
+</v-toolbar>
 
-    <v-container class="container pa-10">
+
+    <v-container class="container pa-4">
       <!-- ToDo Input Section -->
-      <v-card class="pa-4 mb-4">
-        <v-text-field class="text-white" v-model="task" label="Add a new task" @keyup.enter="addTask" />
-        <v-btn color="orange" @click="addTask">Add Task</v-btn>
+      <v-card class="input-card mb-4">
+        <v-card-title>
+          <span class="headline">Add New Task</span>
+        </v-card-title>
+        <v-card-text>
+          <v-text-field v-model="taskName" label="Task Name" outlined dense />
+          <v-text-field
+            v-model="taskDescription"
+            label="Task Description"
+            multiline
+            outlined
+            dense
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-btn class="highlighted-button" @click="addTask" elevation="2">Add Task</v-btn>
+        </v-card-actions>
       </v-card>
 
       <!-- In Progress Section -->
-      <v-card class="pa-15 in-progress-background mb-4">
-        <div class="text-center">
-          <v-card class="in-progress-header" outlined>
-            <v-card-text style="margin: 0; color: white;">In Progress</v-card-text>
-          </v-card>
-        </div>
-        <v-list style="margin: 0; color: white; border-radius: 10px; background-color: #133;">
-          <v-list-item-group>
-            <v-list-item v-for="(task, index) in inProgressTasks" :key="index">
-              <v-list-item-content>
-                <v-list-item-title v-if="!isEditing[index]">
-                  {{ index + 1 }}. {{ task }} <span class="task-time">{{ taskTimes[index] }}</span>
-                </v-list-item-title>
+      <v-card class="in-progress-card mb-4">
+        <v-card-title>
+          <span class="headline">In Progress</span>
+          <v-spacer></v-spacer>
+        </v-card-title>
+
+        <v-card-text>
+          <v-row>
+            <v-col v-for="(task, index) in inProgressTasks" :key="index" cols="12" sm="6" md="4">
+              <v-card class="task-item">
+                <v-card-title>
+                  <strong @click="toggleCompletion(index)" :class="{ 'line-through': task.completed }">
+                    {{ index + 1 }}. {{ task.name }}
+                  </strong>
+                </v-card-title>
+                <v-card-text>
+                  <div class="task-description">{{ task.description }}</div>
+                  <div class="task-time">{{ task.time }}</div>
+                </v-card-text>
+                <v-card-actions>
+                  <v-btn icon @click="startEditing(index)" v-if="!isEditing[index]">
+                    <v-icon>mdi-pencil</v-icon>
+                  </v-btn>
+                  <v-btn icon @click="completeTask(index)" v-if="!task.completed">
+                    <v-icon>mdi-check</v-icon>
+                  </v-btn>
+                  <v-btn v-if="isEditing[index]" @click="cancelEdit(index)">Cancel</v-btn>
+                </v-card-actions>
                 <v-text-field
-                  v-else
+                  v-if="isEditing[index]"
                   v-model="editedTasks[index]"
                   @keyup.enter="updateTask(index)"
                   @blur="stopEditing(index)"
                   single-line
                   hide-details
+                  outlined
+                  dense
                 />
-              </v-list-item-content>
-              <v-list-item-action>
-                <v-btn icon @click="completeTask(index)">
-                  <v-icon>mdi-check</v-icon>
-                </v-btn>
-                <v-btn icon v-if="!isEditing[index]" @click="startEditing(index)">
-                  <v-icon>mdi-pencil</v-icon>
-                </v-btn>
-                <v-btn v-if="isEditing[index]" @click="cancelEdit(index)">
-                  Cancel
-                </v-btn>
-              </v-list-item-action>
-            </v-list-item>
-          </v-list-item-group>
-        </v-list>
-      </v-card>
-
-      <!-- Completed Tasks Section -->
-      <v-card class="pa-4 completed-background mb-4">
-        <div class="text-center">
-          <v-card class="completed-header" outlined>
-            <v-card-text style="margin: 0; color: white;">Completed</v-card-text>
-          </v-card>
-        </div>
-        <v-list style="margin: 0; color: white; border-radius: 10px; background-color: #555;">
-          <v-list-item-group>
-            <v-list-item v-for="(task, index) in completedTasks" :key="index">
-              <v-list-item-content>
-                <v-list-item-title>{{ task }}</v-list-item-title>
-              </v-list-item-content>
-              <v-list-item-action>
-                <v-btn icon @click="removeTask(index)">
-                  <v-icon>mdi-delete</v-icon>
-                </v-btn>
-              </v-list-item-action>
-            </v-list-item>
-          </v-list-item-group>
-        </v-list>
+              </v-card>
+            </v-col>
+          </v-row>
+        </v-card-text>
       </v-card>
     </v-container>
   </v-app>
 </template>
+
+
 
 <script>
 import { ref, reactive, onMounted } from 'vue';
 
 export default {
   setup() {
-    const task = ref('');
+    const taskName = ref('');
+    const taskDescription = ref('');
     const inProgressTasks = reactive([]);
-    const completedTasks = reactive([]);
     const isEditing = reactive([]);
     const editedTasks = reactive([]);
-    const taskTimes = reactive([]); // Array to store the times tasks are added
 
     const addTask = () => {
-      if (task.value.trim()) {
-        inProgressTasks.push(task.value.trim());
-        taskTimes.push(new Date().toLocaleTimeString()); // Store the current time
-        task.value = '';
+      if (taskName.value.trim()) {
+        inProgressTasks.push({
+          name: taskName.value.trim(),
+          description: taskDescription.value.trim(),
+          completed: false,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        });
+        taskName.value = '';
+        taskDescription.value = '';
         initializeTasks();
       }
     };
 
     const completeTask = (index) => {
-      const task = inProgressTasks[index];
       inProgressTasks.splice(index, 1);
-      completedTasks.push(task);
-      taskTimes.splice(index, 1); // Remove the associated time
       initializeTasks();
-    };
-
-    const removeTask = (index) => {
-      completedTasks.splice(index, 1);
     };
 
     const startEditing = (index) => {
       isEditing[index] = true;
-      editedTasks[index] = inProgressTasks[index];
+      editedTasks[index] = inProgressTasks[index].name;
     };
 
     const stopEditing = (index) => {
@@ -119,14 +119,14 @@ export default {
     };
 
     const updateTask = (index) => {
-      if (editedTasks[index] !== inProgressTasks[index]) {
-        inProgressTasks[index] = editedTasks[index];
+      if (editedTasks[index] !== inProgressTasks[index].name) {
+        inProgressTasks[index].name = editedTasks[index];
       }
       stopEditing(index);
     };
 
     const cancelEdit = (index) => {
-      editedTasks[index] = inProgressTasks[index];
+      editedTasks[index] = inProgressTasks[index].name;
       stopEditing(index);
     };
 
@@ -134,9 +134,10 @@ export default {
       isEditing.length = inProgressTasks.length;
       editedTasks.length = inProgressTasks.length;
       isEditing.fill(false);
-      for (let i = 0; i < inProgressTasks.length; i++) {
-        editedTasks[i] = inProgressTasks[i];
-      }
+    };
+
+    const toggleCompletion = (index) => {
+      inProgressTasks[index].completed = !inProgressTasks[index].completed;
     };
 
     onMounted(() => {
@@ -144,62 +145,84 @@ export default {
     });
 
     return {
-      task,
+      taskName,
+      taskDescription,
       inProgressTasks,
-      completedTasks,
       isEditing,
       editedTasks,
-      taskTimes, // Expose taskTimes
       addTask,
       completeTask,
-      removeTask,
       startEditing,
       stopEditing,
       updateTask,
       cancelEdit,
+      toggleCompletion,
     };
-  }
+  },
 };
 </script>
 
+
 <style scoped>
-.container-background {
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(255, 165, 0, 0.5));
-  color: white;
+.container {
+  background: url('./assets/background.jpg') no-repeat center center; 
+  background-size: cover; 
+  color: #34495E; 
   min-height: 100vh;
+  font-family: 'Arial', sans-serif;
+  position: relative;
+  padding: 16px; /* Add some padding to the container */
 }
 
-.in-progress-background {
-  background: linear-gradient(to right, #00b09b, #156fa6); /* Green to Blue gradient */
-  color: white;
+.input-card {
+  background: white;
+  border-radius: 8px; 
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+  padding: 16px;
 }
 
-.completed-background {
-  background: linear-gradient(to right, #ff7e5f, #feb47b); /* Orange to Black gradient */
-  color: white;
+.in-progress-card {
+  background: #ECF0F1; 
+  border-radius: 8px;
 }
 
-.in-progress-header, .completed-header {
-  font-weight: bold;
-  font-size: 20px;
-  border-radius: 10px;
-  display: inline-block;
-  padding: 4px 8px;
-  margin-bottom: 16px;
-  border: 2px solid orange;
+/* Maintain the card's responsiveness */
+.task-item {
+  background: white;
+  border-radius: 16px; 
+  padding: 10px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Additional styles for mobile-friendly text size */
+.task-description {
+  font-weight: normal; 
+  color: #7f8c8d;
 }
 
 .task-time {
-  font-size: 0.8em;
-  color: #ccc; /* Lighter color for time */
+  font-size: 0.85em; 
+  color: #95a5a6;
+}
+
+/* Make headlines slightly smaller on mobile */
+.headline {
+  font-weight: bold;
+  font-size: 1.1em; /* Adjust this as needed */
 }
 
 .v-btn {
-  background-color: orange !important;
+  color: #2980B9; 
 }
 
-.v-card {
-  background-color: rgba(68, 44, 223, 0.7);
-  border-radius: 10px;
+@media (max-width: 600px) {
+  .headline {
+    font-size: 1em; /* Smaller headline for mobile */
+  }
+
+  .task-item {
+    padding: 8px; /* Adjust padding for smaller devices */
+  }
 }
 </style>
