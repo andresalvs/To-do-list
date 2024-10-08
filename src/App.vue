@@ -74,6 +74,12 @@
         </v-card-text>
       </v-card>
     </v-container>
+
+    <footer style="background-color: indigo; color: white; text-align: center; padding: 20px;">
+    Developed by: <a href="https://www.instagram.com/andreeeofficial/" style="color: white; text-decoration: none;"> <b>Andre Salvador</b> </a>
+    </footer>
+
+
   </v-app>
 </template>
 
